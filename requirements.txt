@@ -1,0 +1,4 @@
+sc2
+numpy
+matplotlib
+opencv-python
