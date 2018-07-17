@@ -13,18 +13,14 @@ pip install -r requirements.txt
 
 mkdir train_data
 
-python3 get_data.py
+python get_data.py
 ```
 
 ### ubuntu 16.04
 
-- python 3.5
-- pip 10.0.1
-- anaconda
+deploy a instance and install the docker tensorflow-gpu [image](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/docker/README.md)
 
-```sh
-conda install -c anaconda tensorflow-gpu
-
+```
 pip3 install -r requirements.txt
 
 python3 train.py
