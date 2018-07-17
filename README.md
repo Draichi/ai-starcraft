@@ -9,4 +9,11 @@
 
 >a lot of functions here are in "C:\Users\USER_NAME\AppData\Local\Programs\Python\Python36-32\Lib\site-packages\sc2\bot_ai.py"
 
->https://drive.google.com/file/d/1cO0BmbUhE2HsUC5ttQrLQC_wLTdCn2-u/view train_data
+>https://drive.google.com/file/d/1cO0BmbUhE2HsUC5ttQrLQC_wLTdCn2-u/view 1280 game data vs hard ai
+
+```sh
+install anaconda (windows or ubuntu)
+conda install -c anaconda tensorflow-gpu 
+pip3 install -r requirements.txt
+```
+use python 3.6
