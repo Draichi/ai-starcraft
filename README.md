@@ -11,19 +11,15 @@
 
 >https://drive.google.com/file/d/1cO0BmbUhE2HsUC5ttQrLQC_wLTdCn2-u/view 1280 game data vs hard ai
 
-### windows
+## Setup
+Run the game on windows and play with data on ubuntu
+
+- python 3.6
+- pip 10.0.1
+
+### ubuntu 16.04
 
 ```sh
-install anaconda
-conda create -n tensorflow pip python=3.5 
-activate tensorflow
-pip install --ignore-installed --upgrade tensorflow-gpu 
-pip install -r requirements.txt
-```
-
-### linux
-
-```sh
-conda install -c anaconda tensorflow-gpu 
-activate tensorflow-gpu
+conda install -c anaconda tensorflow-gpu
+pip3 install -r requirements.txt
 ```
