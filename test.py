@@ -7,7 +7,7 @@ GATEWAY, CYBERNETICSCORE, STALKER, STARGATE, VOIDRAY, OBSERVER, ROBOTICSFACILITY
 
 os.environ["SC2PATH"] = 'E:\Program Files\StarCraft II'
 
-MODEL_PATH = 'models/BasicCNN-30-epochs-0.0001-LR-4.2'
+MODEL_PATH = 'models/convnet-30-epochs-0.0001-LR-stage1'
 HEADLESS = False
 
 class Ai(sc2.BotAI):
