@@ -3,13 +3,13 @@
 ## Setup
 
 - Install starcraft
-- Dowload some [maps](https://github.com/Blizzard/s2client-proto#map-packs)
+- Download some [maps](https://github.com/Blizzard/s2client-proto#map-packs)
 - Create the `Maps` folder in your StarCraft installation folder and extract the maps there
 ```sh
 pip install -r requirements.txt
 ```
 
-Collect the data and train a model in a virtual machine (paperspace), it'll take a long time
+Collect the data and train a model in a virtual machine (paperspace) with tensorflow-gpu, it'll take a long time
 
 ## Files
 

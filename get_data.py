@@ -1,4 +1,4 @@
-import sc2, random, cv2, time, os
+import sc2, random, cv2, time, os, math
 import numpy as np
 from sc2 import run_game, maps, Race, Difficulty, position, Result
 from sc2.player import Bot, Computer
@@ -11,10 +11,11 @@ HEADLESS = False
 
 class Ai(sc2.BotAI):
     def __init__(self):
-        self.ITERATIONS_PER_MINUTE = 165
+        # self.ITERATIONS_PER_MINUTE = 165
         self.MAX_WORKERS = 50
         self.do_something_after = 0
         self.train_data = []
+        self.scouts_and_spots = {} # {unit tag : location}
 
     def on_end(self, game_result):
         print('--- on_end called ---')
@@ -24,7 +25,9 @@ class Ai(sc2.BotAI):
             np.save("train_data/{}.npy".format(str(int(time.time()))), np.array(self.train_data))
 
     async def on_step(self, iteration):
-        self.iteration = iteration
+        # self.iteration = iteration
+        self.time = (self.state.game_loop/22.4) / 60
+        await self.build_scout()
         await self.scout()
         await self.distribute_workers() #built-in method
         await self.build_workers()
@@ -36,13 +39,19 @@ class Ai(sc2.BotAI):
         await self.intel()
         await self.attack()
 
+    async def build_scout(self): # build a scout for every 3 minutes
+        if len(self.units(OBSERVER)) < math.floor(self.time/3):
+            for rf in self.units(ROBOTICSFACILITY).ready.noqueue:
+                if self.can_afford(OBSERVER) and self.supply_left > 0:
+                    await self.do(rf.train(OBSERVER))
+
     def random_location_variance(self, enemy_start_location):
         # harrison mess
         x = enemy_start_location[0]
         y = enemy_start_location[1]
 
-        x += ((random.randrange(-20, 20))/100) * enemy_start_location[0]
-        y += ((random.randrange(-20, 20))/100) * enemy_start_location[1]
+        x += random.randrange(-5,5)
+        y += random.randrange(-5,5)
 
         if x < 0:
             x=0
@@ -57,16 +66,60 @@ class Ai(sc2.BotAI):
         return go_to
 
     async def scout(self):
-        if len(self.units(OBSERVER)) > 0:
-            scout = self.units(OBSERVER)[0]
-            if scout.is_idle:
-                enemy_location = self.enemy_start_locations[0]
-                move_to = self.random_location_variance(enemy_location)
-                await self.do(scout.move(move_to))
+        self.expand_dis_dir = {} # {distance to enemy: expansion location}
+
+        for el in self.expansion_locations:
+            distance_to_enemy_start = el.distance_to(self.enemy_start_locations[0])
+            self.expand_dis_dir[distance_to_enemy_start] = el
+            
+        self.ordered_exp_distances = sorted(k for k in self.expand_dis_dir)
+        existing_ids = [unit.tag for unit in self.units]
+        to_be_removed = []
+        for noted_scout in self.scouts_and_spots:
+            if noted_scout not in existing_ids:
+                to_be_removed.append(noted_scout)
+
+        for scout in to_be_removed:
+            del self.scouts_and_spots[scout]
+
+        if len(self.units(ROBOTICSFACILITY).ready) == 0:
+            unit_type = PROBE
+            unit_limit = 1
         else:
-            for rf in self.units(ROBOTICSFACILITY).ready.noqueue:
-                if self.can_afford(OBSERVER) and self.supply_left > 0:
-                    await self.do(rf.train(OBSERVER))
+            unit_type = OBSERVER
+            unit_limit = 15
+
+        assign_scout = True
+
+        if unit_type == PROBE:
+            for unit in self.units(PROBE):
+                if unit.tag in self.scouts_and_spots:
+                    assign_scout = False
+
+        if assign_scout:
+            if len(self.units(unit_type).idle) > 0:
+                for obs in self.units(unit_type).idle[:unit_limit]:
+                    if obs.tag not in self.scouts_and_spots:
+                        for dis in self.ordered_exp_distances:
+                            try:
+                                location = self.expand_dis_dir[dis] #next(value for key, value in self.expand_dis_dir.items if key == dis)
+                                active_locations = [self.scouts_and_spots[k] for k in self.scouts_and_spots]
+
+                                if location not in active_locations:
+                                    if unit_type == PROBE:
+                                        for unit in self.units(PROBE):
+                                            if unit.tag in self.scouts_and_spots:
+                                                continue
+                                    await self.do(obs.move(location))
+                                    self.scouts_and_spots[obs.tag] = location
+                                    break
+                            except Exception as e:
+                                print(str(e))
+
+        for obs in self.units(unit_type):
+            if obs.tag in self.scouts_and_spots:
+                if obs in [probe for probe in self.units(PROBE)]:
+                    await self.do(obs.move(self.random_location_variance(self.scouts_and_spots[obs.tag])))
 
     async def intel(self):
         game_data = np.zeros(
@@ -101,7 +154,7 @@ class Ai(sc2.BotAI):
                 )
 
         # harrison mess
-        main_base_names = ['nexus', 'supplydepot', 'hatchery']
+        main_base_names = ['nexus', 'commandcenter', 'hatchery']
         for enemy_building in self.known_enemy_structures:
             pos = enemy_building.position
             if enemy_building.name.lower() not in main_base_names:
@@ -181,7 +234,7 @@ class Ai(sc2.BotAI):
                     await self.do(worker.build(ASSIMILATOR, vaspene))
 
     async def expand(self):
-        if self.units(NEXUS).amount < (self.iteration / self.ITERATIONS_PER_MINUTE) and self.can_afford(NEXUS):
+        if self.units(NEXUS).amount < self.time/2 and self.can_afford(NEXUS):
             await self.expand_now() # built-in method
 
     async def offensive_force_building(self):
@@ -201,7 +254,7 @@ class Ai(sc2.BotAI):
                     if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
                         await self.build(ROBOTICSFACILITY, near=pyloon)
 
-                if len(self.units(STARGATE)) < (self.iteration / self.ITERATIONS_PER_MINUTE):
+                if len(self.units(STARGATE)) < self.time:
                     if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
                         await self.build(STARGATE, near=pyloon)
 
@@ -226,11 +279,11 @@ class Ai(sc2.BotAI):
             # attack_known_enemy_structures
             # attack_enemy_start
             target = False
-            if self.iteration > self.do_something_after:
+            if self.time > self.do_something_after:
                 if choice == 0:
                     # no attack
-                    wait = random.randrange(20,165)
-                    self.do_something_after = self.iteration + wait
+                    wait = random.randrange(7, 100) / 100 # 7% to 100% of a minute
+                    self.do_something_after = self.time + wait
                 elif choice == 1:
                     # attack_unit_closest_nexus
                     if len(self.known_enemy_units) > 0:
