@@ -1,4 +1,4 @@
-import sc2, random, cv2, time, os
+import sc2, random, cv2, time, os, keras
 import numpy as np
 from sc2 import run_game, maps, Race, Difficulty, position, Result
 from sc2.player import Bot, Computer
@@ -7,14 +7,19 @@ GATEWAY, CYBERNETICSCORE, STALKER, STARGATE, VOIDRAY, OBSERVER, ROBOTICSFACILITY
 
 os.environ["SC2PATH"] = 'E:\Program Files\StarCraft II'
 
+MODEL_PATH = 'models/BasicCNN-30-epochs-0.0001-LR-4.2'
 HEADLESS = False
 
 class Ai(sc2.BotAI):
-    def __init__(self):
+    def __init__(self, use_model=False):
         self.ITERATIONS_PER_MINUTE = 165
         self.MAX_WORKERS = 50
         self.do_something_after = 0
         self.train_data = []
+        self.use_model = use_model
+        if self.use_model:
+            print('using model')
+            self.model = keras.models.load_model(MODEL_PATH)
 
     def on_end(self, game_result):
         print('--- on_end called ---')
@@ -220,13 +225,20 @@ class Ai(sc2.BotAI):
 
     async def attack(self):
         if len(self.units(VOIDRAY).idle) > 0:
-            choice = random.randrange(0,4)
-            # no attack
-            # attack_unit_closest_nexus
-            # attack_known_enemy_structures
-            # attack_enemy_start
             target = False
             if self.iteration > self.do_something_after:
+                if self.use_model:
+                    prediction = self.model.predict([self.flipped.reshape([-1, 176, 200, 3])])
+                    choice = np.argmax(prediction[0])
+                    choice_dict = {
+                        0: "No Attack!",
+                        1: "Attack close to our nexus!",
+                        2: "Attack Enemy Structure!",
+                        3: "Attack Eneemy Start!"
+                    }
+                    print("Choice #{}:{}".format(choice, choice_dict[choice]))
+                else:
+                    choice = random.randrange(0,4)
                 if choice == 0:
                     # no attack
                     wait = random.randrange(20,165)
@@ -255,7 +267,7 @@ class Ai(sc2.BotAI):
 run_game(
     maps.get("AbyssalReefLE"),
     [
-        Bot(Race.Protoss, Ai()),
+        Bot(Race.Protoss, Ai(use_model=True)),
         Computer(Race.Terran, Difficulty.Easy)
     ],
     realtime=False    

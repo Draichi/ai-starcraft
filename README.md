@@ -37,3 +37,5 @@ python3 train.py
 >a lot of functions here are in "C:\Users\USER_NAME\AppData\Local\Programs\Python\Python36-32\Lib\site-packages\sc2\bot_ai.py"
 
 >https://drive.google.com/file/d/1cO0BmbUhE2HsUC5ttQrLQC_wLTdCn2-u/view 1280 game data vs hard ai
+
+>https://drive.google.com/file/d/10lj3vo3nsEMhJayD-K-JFM8t-3BQYmWV/view basic model
