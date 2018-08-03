@@ -1,4 +1,4 @@
 /train_data
 /.vscode
 /models
-/sc2/__pycache__
+**/__pycache__

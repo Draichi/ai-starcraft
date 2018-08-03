@@ -5,6 +5,7 @@ from sc2 import run_game, maps, Race, Difficulty, position, Result
 from sc2.player import Bot, Computer
 from sc2.constants import NEXUS, PROBE, PYLON, ASSIMILATOR, \
 GATEWAY, CYBERNETICSCORE, STALKER, STARGATE, VOIDRAY, OBSERVER, ROBOTICSFACILITY
+from src.ai_functions import build_workers
 
 os.environ["SC2PATH"] = 'E:\Program Files\StarCraft II'
 colorama.init()
@@ -27,7 +28,7 @@ class Ai(sc2.BotAI):
         self.iteration = iteration
         await self.scout()
         await self.distribute_workers() #built-in method
-        await self.build_workers()
+        await build_workers(self)
         await self.build_pylons()
         await self.build_assimilators()
         await self.expand()
@@ -156,13 +157,7 @@ class Ai(sc2.BotAI):
             cv2.imshow('Intel', resized)
             cv2.waitKey(1)
 
-    async def build_workers(self):
-        if len(self.units(NEXUS))*16 > len(self.units(PROBE)):
-            if len(self.units(PROBE)) < self.MAX_WORKERS:
-                for nexus in self.units(NEXUS).ready.noqueue:
-                    if self.can_afford(PROBE):
-                        print('> Traning probe')
-                        await self.do(nexus.train(PROBE))
+    
 
     async def build_pylons(self):
         if self.supply_left < 5 and not self.already_pending(PYLON):
@@ -238,8 +233,8 @@ class Ai(sc2.BotAI):
                     prediction = self.model.predict([self.flipped.reshape([-1, 176, 200, 3])])
                     choice = np.argmax(prediction[0])
                     choice_dict = {
-                        0: "No attack, wait {} milliseconds".format(str(self.do_something_after)),
-                        1: "Attack enemy closest to our nexus",
+                        0: "No attack, wait",
+                        1: "Attack closest enemy",
                         2: "Attack enemy structure",
                         3: "Attack enemy start"
                     }
