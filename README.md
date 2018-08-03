@@ -1,5 +1,7 @@
 # Convolutional Neural Network on Starcraft II
 
+![AI vs hard bot](AI-vs-HardBot.gif)
+
 ## Setup
 
 - Install starcraft
@@ -15,7 +17,7 @@ Collect the data and train a model in a virtual machine (paperspace) with tensor
 
 - `get_data.py`: Generate the train data, can download the samples [here](https://drive.google.com/file/d/1cO0BmbUhE2HsUC5ttQrLQC_wLTdCn2-u/view)
 - `train.py`: Generate the model, or can download a model [here](https://drive.google.com/file/d/10lj3vo3nsEMhJayD-K-JFM8t-3BQYmWV/view)
-- `test.py`: See the machine taking decisions ![test.py](screenshot.png)
+- `test.py`: See the machine taking decisions
 
 if u installed starcraft in C: directory, comment this line:
 `os.environ["SC2PATH"] = 'E:\Program Files\StarCraft II'`
