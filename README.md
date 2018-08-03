@@ -9,6 +9,8 @@
 - Create the `Maps` folder in your StarCraft installation folder and extract the maps there
 ```sh
 pip install -r requirements.txt
+mkdir train_data
+mkdir models
 ```
 
 Collect the data and train a model in a virtual machine (paperspace) with tensorflow-gpu, it'll take a long time
