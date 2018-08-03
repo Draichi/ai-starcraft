@@ -1,11 +1,13 @@
-import sc2, random, cv2, time, os, keras
+import sc2, random, cv2, time, os, keras, colorama
 import numpy as np
+from termcolor import *
 from sc2 import run_game, maps, Race, Difficulty, position, Result
 from sc2.player import Bot, Computer
 from sc2.constants import NEXUS, PROBE, PYLON, ASSIMILATOR, \
 GATEWAY, CYBERNETICSCORE, STALKER, STARGATE, VOIDRAY, OBSERVER, ROBOTICSFACILITY
 
 os.environ["SC2PATH"] = 'E:\Program Files\StarCraft II'
+colorama.init()
 
 MODEL_PATH = 'models/convnet-30-epochs-0.0001-LR-stage1'
 HEADLESS = False
@@ -18,15 +20,8 @@ class Ai(sc2.BotAI):
         self.train_data = []
         self.use_model = use_model
         if self.use_model:
-            print('using model')
+            cprint('> Using model: {}'.format(MODEL_PATH), 'green')
             self.model = keras.models.load_model(MODEL_PATH)
-
-    def on_end(self, game_result):
-        print('--- on_end called ---')
-        print(game_result)
-
-        if game_result == Result.Victory:
-            np.save("train_data/{}.npy".format(str(int(time.time()))), np.array(self.train_data))
 
     async def on_step(self, iteration):
         self.iteration = iteration
@@ -67,10 +62,12 @@ class Ai(sc2.BotAI):
             if scout.is_idle:
                 enemy_location = self.enemy_start_locations[0]
                 move_to = self.random_location_variance(enemy_location)
+                cprint('> Scounting', 'green')
                 await self.do(scout.move(move_to))
         else:
             for rf in self.units(ROBOTICSFACILITY).ready.noqueue:
                 if self.can_afford(OBSERVER) and self.supply_left > 0:
+                    print('> Training observer')
                     await self.do(rf.train(OBSERVER))
 
     async def intel(self):
@@ -164,6 +161,7 @@ class Ai(sc2.BotAI):
             if len(self.units(PROBE)) < self.MAX_WORKERS:
                 for nexus in self.units(NEXUS).ready.noqueue:
                     if self.can_afford(PROBE):
+                        print('> Traning probe')
                         await self.do(nexus.train(PROBE))
 
     async def build_pylons(self):
@@ -171,6 +169,7 @@ class Ai(sc2.BotAI):
             nexuses = self.units(NEXUS).ready
             if nexuses.exists:
                 if self.can_afford(PYLON):
+                    print('> Building pylon')
                     await self.build(PYLON, near=nexuses.first)
 
     async def build_assimilators(self):
@@ -183,10 +182,12 @@ class Ai(sc2.BotAI):
                 if worker is None:
                     break
                 if not self.units(ASSIMILATOR).closer_than(1.0, vaspene).exists:
+                    print('> Building assimilator')
                     await self.do(worker.build(ASSIMILATOR, vaspene))
 
     async def expand(self):
         if self.units(NEXUS).amount < (self.iteration / self.ITERATIONS_PER_MINUTE) and self.can_afford(NEXUS):
+            cprint('> Expanding', 'green')
             await self.expand_now() # built-in method
 
     async def offensive_force_building(self):
@@ -195,27 +196,33 @@ class Ai(sc2.BotAI):
 
             if self.units(GATEWAY).ready.exists and not self.units(CYBERNETICSCORE):
                 if self.can_afford(CYBERNETICSCORE) and not self.already_pending(CYBERNETICSCORE):
+                    print('> Building cyberneticscore')
                     await self.build(CYBERNETICSCORE, near=pyloon)
 
             elif len(self.units(GATEWAY)) < 1:
                 if self.can_afford(GATEWAY) and not self.already_pending(GATEWAY):
+                    print('> Building gateway')
                     await self.build(GATEWAY, near=pyloon)
 
             if self.units(CYBERNETICSCORE).ready.exists:
                 if len(self.units(ROBOTICSFACILITY)) < 1:
                     if self.can_afford(ROBOTICSFACILITY) and not self.already_pending(ROBOTICSFACILITY):
+                        print('> Building roboticsfacility')
                         await self.build(ROBOTICSFACILITY, near=pyloon)
 
                 if len(self.units(STARGATE)) < (self.iteration / self.ITERATIONS_PER_MINUTE):
                     if self.can_afford(STARGATE) and not self.already_pending(STARGATE):
+                        print('> Building stargate')
                         await self.build(STARGATE, near=pyloon)
 
     async def offensive_force_itself(self):
         for sg in self.units(STARGATE).ready.noqueue:
             if self.can_afford(VOIDRAY) and self.supply_left > 0:
+                print('> Training voidray')
                 await self.do(sg.train(VOIDRAY))
 
     def find_target(self, state):
+        print('> Finding targets')
         if len(self.known_enemy_units) > 0:
             return random.choice(self.known_enemy_units)
         elif len(self.known_enemy_structures) > 0:
@@ -231,12 +238,13 @@ class Ai(sc2.BotAI):
                     prediction = self.model.predict([self.flipped.reshape([-1, 176, 200, 3])])
                     choice = np.argmax(prediction[0])
                     choice_dict = {
-                        0: "No Attack!",
-                        1: "Attack close to our nexus!",
-                        2: "Attack Enemy Structure!",
-                        3: "Attack Eneemy Start!"
+                        0: "No attack, wait {} milliseconds".format(str(self.do_something_after)),
+                        1: "Attack enemy closest to our nexus",
+                        2: "Attack enemy structure",
+                        3: "Attack enemy start"
                     }
-                    print("Choice #{}:{}".format(choice, choice_dict[choice]))
+                    cprint('~'*60, 'cyan')
+                    cprint('> {}'.format(choice_dict[choice]), 'magenta')
                 else:
                     choice = random.randrange(0,4)
                 if choice == 0:
@@ -261,8 +269,17 @@ class Ai(sc2.BotAI):
                 # [0,1,0,0]
                 y = np.zeros(4)
                 y[choice] = 1
-                print(y)
+                cprint(y, 'magenta')
+                cprint('~'*60, 'cyan')
                 self.train_data.append([y, self.flipped])
+
+    def on_end(self, game_result):
+        cprint('DEBUG: --- on_end called ---', 'yellow')
+        cprint('Game {}'.format(str(game_result)), 'green')
+
+        if game_result == Result.Victory:
+            cprint('> Saving this game data on: train_data/{}.npy'.format(str(int(time.time()))), 'green')
+            np.save("train_data/{}.npy".format(str(int(time.time()))), np.array(self.train_data))
 
 run_game(
     maps.get("AbyssalReefLE"),

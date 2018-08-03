@@ -3,3 +3,5 @@ matplotlib
 opencv-python
 tensorflow
 keras
+termcolor
+colorama
