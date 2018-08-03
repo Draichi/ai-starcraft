@@ -231,7 +231,7 @@ class Ai(sc2.BotAI):
             return self.enemy_start_locations[0]
 
     async def attack(self):
-        if len(self.units(VOIDRAY).idle) > 0:
+        if len(self.units(VOIDRAY).idle) > 10:
             target = False
             if self.iteration > self.do_something_after:
                 if self.use_model:
@@ -243,8 +243,7 @@ class Ai(sc2.BotAI):
                         2: "Attack enemy structure",
                         3: "Attack enemy start"
                     }
-                    cprint('~'*60, 'cyan')
-                    cprint('> {}'.format(choice_dict[choice]), 'magenta')
+                    cprint('> {}'.format(choice_dict[choice]), 'red')
                 else:
                     choice = random.randrange(0,4)
                 if choice == 0:
@@ -269,8 +268,7 @@ class Ai(sc2.BotAI):
                 # [0,1,0,0]
                 y = np.zeros(4)
                 y[choice] = 1
-                cprint(y, 'magenta')
-                cprint('~'*60, 'cyan')
+                # cprint(y, 'cyan')
                 self.train_data.append([y, self.flipped])
 
     def on_end(self, game_result):
@@ -285,7 +283,7 @@ run_game(
     maps.get("AbyssalReefLE"),
     [
         Bot(Race.Protoss, Ai(use_model=True)),
-        Computer(Race.Terran, Difficulty.Easy)
+        Computer(Race.Terran, Difficulty.Hard)
     ],
     realtime=False    
 )
