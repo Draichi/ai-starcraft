@@ -2,6 +2,9 @@
 
 ![AI vs hard bot](AI-vs-HardBot.gif)
 
+- Python 3.6
+- Windows 10
+
 ## Setup
 
 - Install starcraft
