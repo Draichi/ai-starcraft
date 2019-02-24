@@ -5,11 +5,12 @@
 - Python 3.6
 - Windows 10
 
-## Setup
+## [Setup](https://github.com/deepmind/pysc2)
 
 - Install starcraft
 - Download some [maps](https://github.com/Blizzard/s2client-proto#map-packs)
 - Create the `Maps` folder in your StarCraft installation folder and extract the maps there
+- from `/ai-starcraft/stage1/`
 ```sh
 pip install -r requirements.txt
 mkdir train_data
